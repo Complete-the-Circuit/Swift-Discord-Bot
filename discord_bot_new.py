@@ -15,22 +15,16 @@ from time import sleep
 bot_token = ""
 bot_ID = ""
 
-client = discord.Client()
-bot_prefix = "!"
-client = commands.Bot(command_prefix = bot_prefix)
-
-@client.event
-async def on_ready():
-    print("Logged in as\n", client.user.name, "\n", client.user.id, "\n ----------")
-    if not discord.opus.is_loaded():
-        discord.opus.load_opus()
+if not discord.opus.is_loaded():
+    discord.opus.load_opus()
 
 class Messaging():
     def __init__(self, message):
         self.message = message
 
+    @commands.command(pass_context=True, no_pm=True)
     async def haar_detect(self):
-        if self.message.content.startswith("!detectFeline"):
+        if self.message.content.startswith("detectFeline"):
             url = self.message.content[14:]
             req = urllib.request.Request(url, headers={'User-Agent': "Magic Browser"})
             valid_url = True
@@ -72,8 +66,9 @@ class Messaging():
                 else:
                     await client.send_message(self.message.channel, "There are no cats...")
 
+    @commands.command(pass_context=True, no_pm=True)
     async def talking_clock(self):
-        if self.message.content.startswith("!time"):
+        if self.message.content.startswith("time"):
             clock = TalkingClock()
             current_hour, current_minutes, twelve_hour_time = clock.string_time()
             cond_hour = current_hour
@@ -84,26 +79,29 @@ class Messaging():
             elif cond_hour <= 12:
                 await client.send_message(self.message.channel, "The time is: " + current_hour + ":" + current_minutes, tts=True)
 
+    @commands.command(pass_context=True, no_pm=True)
     async def help(self):
         command_list = ["I have several commands that are currently available for use. These are:",
                         "!detectFeline - Detects cats from the provided URL.",
                         "!youtube - Plays a preset youtube video.",
                         "!ytRequest - Plays the provided youtube video URL in the current voice channel the user is in.",
                         "Credits go to the bot author Fyrngarm#5098, and the discord.py API."]
-        if self.message.content.startswith("?help"):
+        if self.message.content.startswith("help"):
             await client.send_message(self.message.channel, "\n".join(command_list))
-        elif self.message.content.startswith("?ping"):
+        elif self.message.content.startswith("ping"):
             await client.send_message(self.message.channel, "pong")
 
 class AudioPlayback(Messaging):
     def __init__(self):
         super.__init__()
 
+    @commands.command(pass_context=True, no_pm=True)
     async def youtube_player(self):
-        if self.message.content.startswith("!youtube"):
+        if self.message.content.startswith("ytRequest"):
+            vid = self.message.content[11:]
             channel = self.message.author.voice_channel
             voice = await client.join_voice_channel(channel)
-            player = await voice.create_ytdl_player("https://youtu.be/H3HFOlYba-4")
+            player = await voice.create_ytdl_player(vid)
             player.volume = 0.7
             player.start()
             while player.is_playing():
@@ -112,4 +110,14 @@ class AudioPlayback(Messaging):
                     disconnect = await voice.disconnect()
                     print("Bot has left the voice channel")
                     break
+
+client = discord.Client()
+bot_prefix = "!"
+client = commands.Bot(command_prefix = bot_prefix)
+client.add_cog(Messaging(client))
+
+@client.event
+async def on_ready():
+    print("Logged in as\n", client.user.name, "\n", client.user.id, "\n ----------")
+
 client.run(bot_token)
